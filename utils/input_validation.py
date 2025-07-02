@@ -1,9 +1,17 @@
-import enchant
 import re
+import nltk
 
-d = enchant.Dict("en_US")
+# Download once; comment this line after running locally
+nltk.download('words', quiet=True)
 
+from nltk.corpus import words
+
+ENGLISH_WORDS = set(words.words())
 ALLOWED_ABBREVIATIONS = {"HR", "CEO", "CTO", "CFO", "VP", "PM", "QA", "UX", "UI"}
+
+def is_english_word(word: str) -> bool:
+    # Check word ignoring case
+    return word.lower() in ENGLISH_WORDS
 
 def is_valid_job_title(title: str) -> bool:
     title = title.strip()
@@ -13,26 +21,26 @@ def is_valid_job_title(title: str) -> bool:
     if not re.fullmatch(r"[A-Za-z\s\-]+", title):
         return False
 
-    words = title.split()
+    words_in_title = title.split()
 
     if len(title) <= 3 and title.upper() in ALLOWED_ABBREVIATIONS:
         return True
 
-    for w in words:
+    for w in words_in_title:
         if len(w) <= 3 and w.upper() in ALLOWED_ABBREVIATIONS:
             continue
-        if not d.check(w):
+        if not is_english_word(w):
             return False
 
     return True
 
 def is_valid_answer(answer: str) -> bool:
-    words = re.findall(r'\b\w+\b', answer.lower())
+    words_in_answer = re.findall(r'\b\w+\b', answer.lower())
 
-    if len(answer.strip()) < 20 or not words:
+    if len(answer.strip()) < 20 or not words_in_answer:
         return False
 
-    valid_count = sum(1 for w in words if d.check(w))
-    ratio = valid_count / len(words)
+    valid_count = sum(1 for w in words_in_answer if is_english_word(w))
+    ratio = valid_count / len(words_in_answer)
 
     return ratio >= 0.6
