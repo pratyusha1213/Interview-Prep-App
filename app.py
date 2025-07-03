@@ -68,7 +68,7 @@ with st.sidebar:
     st.markdown("---")
 
     if st.session_state.get("interview_started", False) and st.button("🔁 Restart Interview"):
-        for key in ["interview_started", "questions", "answers", "feedback", "current_q", "waiting_for_next"]:
+        for key in ["interview_started", "questions", "answers", "feedback", "current_q", "waiting_for_next", "job_desc", "resume_text"]:
             if key in st.session_state:
                 del st.session_state[key]
         st.rerun()
@@ -92,6 +92,10 @@ if st.button("🎤 Start Interview") and not st.session_state.interview_started:
             full_title = f"{job_title} at {company_name}" if company_name.strip() else job_title
             resume_text = extract_text_from_resume(resume_file) if resume_file else ""
             job_desc = job_description.strip()
+
+            # Save job_desc and resume_text in session state for later use
+            st.session_state.job_desc = job_desc
+            st.session_state.resume_text = resume_text
 
             prompt = f"""
 You are a professional AI interview coach. Generate exactly 10 clear, relevant, and non-redundant interview questions for the role of **{full_title}**, based on the information below.
@@ -168,26 +172,31 @@ if st.session_state.interview_started and st.session_state.current_q < len(st.se
             if st.button("Skip Question"):
                 st.session_state.answers.append("[Skipped]")
                 with st.spinner("Fetching example answer..."):
-                    job_desc = st.session_state.get('job_desc', '').strip()
-                    resume_text = st.session_state.get('resume_text', '').strip()
+                    resume_text = extract_text_from_resume(resume_file) if resume_file else ""
+                    job_desc = job_description.strip()
 
                     if job_desc or resume_text:
                         skip_feedback_prompt = (
-                            f"You are an interview coach. The candidate skipped this question.\n\n"
-                        f"**Question:** {question}\n\n"
-                        f"Candidate's Resume:\n{resume_text}\n\n"
-                        f"Job Description:\n{job_desc}\n\n"
-                        f"Example (Ideal) Answer:\n<provide a concise and straight-to-the-point answer>\n\n"
-                        f"Based on the candidate's resume and the job description, please provide a concise and focused Example (Ideal) Answer suitable for interview practice. "
-                        f"Keep it brief, about 5-6 lines max."
+                            f"You are a professional interview coach. The candidate skipped the question below.\n\n"
+                            f"**Question:** {question}\n\n"
+                            f"Candidate's Resume:\n{resume_text}\n\n"
+                            f"Job Description:\n{job_desc}\n\n"
+                            f"Provide only the **Example (Ideal) Answer** in this format:\n\n"
+                            f"Example (Ideal) Answer:\n\n<your answer here>\n\n"
+                            f"Ensure your reply includes *only* this format — do not include any commentary, preamble, or explanations.\n"
+                            f"The answer should be concise, professional, and 4–6 lines long."
                         )
+
                     else:
                         skip_feedback_prompt = (
-                            f"You're an interview coach. The candidate skipped the following question:\n\n"
-                            f"{question}\n\n"
-                            f"Example (Ideal) Answer:\n<provide a concise and straight-to-the-point answer>\n\n"
-                            f"Provide a concise and relevant ideal answer (5–6 lines max) suitable for a general interview."
+                            f"You are a professional interview coach. The candidate skipped the question below.\n\n"
+                            f"**Question:** {question}\n\n"
+                            f"Provide only the **Example (Ideal) Answer** in this format:\n\n"
+                            f"Example (Ideal) Answer:\n\n<your answer here>\n\n"
+                            f"Ensure your reply includes *only* this format — do not include any commentary, preamble, or explanations.\n"
+                            f"The answer should be concise, professional, and 4–6 lines long."
                         )
+
 
                     feedback = get_gemini_response(skip_feedback_prompt, temperature=0.3)
                     st.session_state.feedback.append(feedback)
@@ -215,7 +224,7 @@ elif st.session_state.interview_started:
         st.markdown("---")
 
     if st.button("🔁 Restart Interview"):
-        for key in ["interview_started", "questions", "answers", "feedback", "current_q", "waiting_for_next"]:
+        for key in ["interview_started", "questions", "answers", "feedback", "current_q", "waiting_for_next", "job_desc", "resume_text"]:
             if key in st.session_state:
                 del st.session_state[key]
         st.rerun()
