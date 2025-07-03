@@ -196,7 +196,7 @@ if st.session_state.interview_started and st.session_state.current_q < len(st.se
                             f"Ensure your reply includes *only* this format — do not include any commentary, preamble, or explanations.\n"
                             f"The answer should be concise, professional, and 4–6 lines long."
                         )
-
+                        
 
                     feedback = get_gemini_response(skip_feedback_prompt, temperature=0.3)
                     st.session_state.feedback.append(feedback)
